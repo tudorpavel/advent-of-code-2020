@@ -1,41 +1,33 @@
+use itertools::Itertools;
+
 const YEAR: i32 = 2020;
 
-fn find_pair(nums: Vec<i32>) -> (i32, i32) {
-    if nums.len() < 1 {
-        return (0, 0)
-    }
-
-    let mut left = 0;
-    let mut right = nums.len() - 1;
-    let mut sorted = nums.clone();
-    sorted.sort();
-
-    while left < right {
-        let sum = sorted[left] + sorted[right];
-
-        if sum == YEAR {
-            return (sorted[left], sorted[right]);
-        }
-
-        if sum > YEAR {
-            right -= 1;
-        } else if sum < YEAR {
-            left += 1;
+fn find_combination(nums: Vec<i32>, length: usize) -> Vec<i32> {
+    for combination in nums.into_iter().combinations(length) {
+        if combination.iter().sum::<i32>() == YEAR {
+            return combination;
         }
     }
 
-    (0, 0)
+    vec![]
 }
 
 fn part1(nums: Vec<i32>) -> i32 {
-    let (a, b) = find_pair(nums);
+    let combination = find_combination(nums, 2);
 
-    a * b
+    combination.iter().product()
+}
+
+fn part2(nums: Vec<i32>) -> i32 {
+    let combination = find_combination(nums, 3);
+
+    combination.iter().product()
 }
 
 fn main() {
     let nums = utils::read_nums();
-    println!("Part 1: {}", part1(nums));
+    println!("Part 1: {}", part1(nums.clone()));
+    println!("Part 2: {}", part2(nums.clone()));
 }
 
 #[cfg(test)]
@@ -43,18 +35,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn find_pair_with_vector() {
+    fn find_combination_of_length_2() {
         assert_eq!(
-            find_pair(vec![1721, 979, 366, 299, 675, 1456]),
-            (299, 1721)
+            find_combination(vec![1721, 979, 366, 299, 675, 1456], 2),
+            vec![1721, 299]
         );
     }
 
     #[test]
-    fn find_pair_with_empty_vector() {
+    fn find_combination_of_length_3() {
         assert_eq!(
-            find_pair(vec![]),
-            (0, 0)
+            find_combination(vec![1721, 979, 366, 299, 675, 1456], 3),
+            vec![979, 366, 675]
+        );
+    }
+
+    #[test]
+    fn find_combination_with_empty_vector() {
+        assert_eq!(
+            find_combination(vec![], 2),
+            vec![]
         );
     }
 
@@ -63,6 +63,14 @@ mod tests {
         assert_eq!(
             part1(vec![1721, 979, 366, 299, 675, 1456]),
             514579
+        );
+    }
+
+    #[test]
+    fn part2_works() {
+        assert_eq!(
+            part2(vec![1721, 979, 366, 299, 675, 1456]),
+            241861950
         );
     }
 }
