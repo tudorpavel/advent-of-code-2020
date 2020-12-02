@@ -27,7 +27,7 @@ fn part2(nums: Vec<i32>) -> i32 {
 fn main() {
     let nums = utils::read_nums();
     println!("Part 1: {}", part1(nums.clone()));
-    println!("Part 2: {}", part2(nums.clone()));
+    println!("Part 2: {}", part2(nums));
 }
 
 #[cfg(test)]
@@ -52,25 +52,16 @@ mod tests {
 
     #[test]
     fn find_combination_with_empty_vector() {
-        assert_eq!(
-            find_combination(vec![], 2),
-            vec![]
-        );
+        assert_eq!(find_combination(vec![], 2), vec![]);
     }
 
     #[test]
     fn part1_works() {
-        assert_eq!(
-            part1(vec![1721, 979, 366, 299, 675, 1456]),
-            514579
-        );
+        assert_eq!(part1(vec![1721, 979, 366, 299, 675, 1456]), 514579);
     }
 
     #[test]
     fn part2_works() {
-        assert_eq!(
-            part2(vec![1721, 979, 366, 299, 675, 1456]),
-            241861950
-        );
+        assert_eq!(part2(vec![1721, 979, 366, 299, 675, 1456]), 241861950);
     }
 }
