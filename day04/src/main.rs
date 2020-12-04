@@ -1,29 +1,40 @@
-const REQUIRED_FIELDS: [&str; 7] = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+mod passport;
 
-fn parse_input(lines: &[String]) -> Vec<String> {
-    lines.split(|l| l == "").map(|v| v.join(" ")).collect()
-}
+use crate::passport::Passport;
 
-fn valid_passport(passport: &str) -> bool {
-    REQUIRED_FIELDS.iter().all(|s| passport.contains(s))
+fn parse_input(lines: &[String]) -> Vec<Passport> {
+    lines
+        .split(|l| l == "")
+        .map(|v| Passport { value: v.join(" ") })
+        .collect()
 }
 
 fn part1(lines: &[String]) -> usize {
     let passports = parse_input(lines);
 
-    passports.into_iter().filter(|p| valid_passport(p)).count()
+    passports
+        .into_iter()
+        .filter(|p| p.has_required_fields())
+        .count()
+}
+
+fn part2(lines: &[String]) -> usize {
+    let passports = parse_input(lines);
+
+    passports.into_iter().filter(|p| p.is_valid()).count()
 }
 
 fn main() {
     let lines = utils::read_lines();
     println!("Part 1: {}", part1(&lines));
+    println!("Part 2: {}", part2(&lines));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn input() -> Vec<String> {
+    fn input_part1() -> Vec<String> {
         vec![
             "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd",
             "byr:1937 iyr:2017 cid:147 hgt:183cm",
@@ -44,8 +55,51 @@ mod tests {
         .collect()
     }
 
+    fn input_part2() -> Vec<String> {
+        vec![
+            "eyr:1972 cid:100",
+            "hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926",
+            "",
+            "iyr:2019",
+            "hcl:#602927 eyr:1967 hgt:170cm",
+            "ecl:grn pid:012533040 byr:1946",
+            "",
+            "hcl:dab227 iyr:2012",
+            "ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277",
+            "",
+            "hgt:59cm ecl:zzz",
+            "eyr:2038 hcl:74454a iyr:2023",
+            "pid:3556412378 byr:2007",
+            "",
+            "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980",
+            "hcl:#623a2f",
+            "",
+            "eyr:2029 ecl:blu cid:129 byr:1989",
+            "iyr:2014 pid:896056539 hcl:#a97842 hgt:165cm",
+            "",
+            "hcl:#888785",
+            "hgt:164cm byr:2001 iyr:2015 cid:88",
+            "pid:545766238 ecl:hzl",
+            "eyr:2022",
+            "",
+            "iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
+            "",
+            "iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:09315471900",
+            "",
+            "iyr:2010 hgt:158cm hcl:#b6652aaaa ecl:blu byr:1944 eyr:2021 pid:093154719",
+        ]
+        .into_iter()
+        .map(|s| String::from(s))
+        .collect()
+    }
+
     #[test]
     fn part1_works() {
-        assert_eq!(part1(&input()), 2);
+        assert_eq!(part1(&input_part1()), 2);
+    }
+
+    #[test]
+    fn part2_works() {
+        assert_eq!(part2(&input_part2()), 4);
     }
 }
