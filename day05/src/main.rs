@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::Range;
 
 fn binary_search(path: &str, search_range: Range<usize>, left_char: char) -> usize {
@@ -16,8 +17,8 @@ fn binary_search(path: &str, search_range: Range<usize>, left_char: char) -> usi
         .unwrap()
 }
 
-fn solve(lines: Vec<String>) -> usize {
-    lines
+fn solve(lines: Vec<String>) -> (usize, usize) {
+    let ids: Vec<usize> = lines
         .iter()
         .map(|l| {
             let (row_path, col_path) = l.split_at(7);
@@ -26,13 +27,27 @@ fn solve(lines: Vec<String>) -> usize {
 
             row * 8 + col
         })
-        .max()
-        .unwrap()
+        .collect();
+
+    let min = *ids.iter().min().unwrap();
+    let max = *ids.iter().max().unwrap();
+
+    let all_seats: HashSet<_> = (min..max + 1).collect();
+    let tickets: HashSet<_> = ids.iter().cloned().collect();
+    let my_id = **all_seats
+        .difference(&tickets)
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap();
+
+    (max, my_id)
 }
 
 fn main() {
     let lines = utils::read_lines();
-    println!("Part 1: {}", solve(lines));
+    let (max, my_id) = solve(lines);
+    println!("Part 1: {}", max);
+    println!("Part 2: {}", my_id);
 }
 
 #[cfg(test)]
@@ -43,12 +58,12 @@ mod tests {
     fn solve_works() {
         assert_eq!(
             solve(
-                vec!["FBFBBFFRLR", "BFFFBBFRRR", "FFFBBBFRRR", "BBFFBBFRLL"]
+                vec!["BBFFBBFLLR", "BBFFBBFLRL", "BBFFBBFRLL", "BBFFBBFRLR"]
                     .into_iter()
                     .map(|s| String::from(s))
                     .collect()
             ),
-            820
+            (821, 819)
         );
     }
 }
