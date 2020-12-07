@@ -45,25 +45,52 @@ fn path_contains(dag: &HashMap<String, Vec<String>>, current: String, lookup: &s
 
     adj_list
         .iter()
-        .any(|vertex| path_contains(dag, vertex.to_string(), lookup))
+        .any(|vertex| path_contains(dag, vertex.clone(), lookup))
 }
 
-fn solve(lines: Vec<String>) -> usize {
-    let (bag_dag, _edge_costs) = build_dag(lines);
+fn total_bag_count(
+    dag: &HashMap<String, Vec<String>>,
+    edge_costs: &HashMap<(String, String), u32>,
+    current: String,
+) -> u32 {
+    let adj_list = dag.get(&current).unwrap();
 
-    bag_dag
+    if adj_list.is_empty() {
+        return 1;
+    }
+
+    adj_list
+        .iter()
+        .map(|vertex| {
+            let current_cost = edge_costs.get(&(current.clone(), vertex.clone())).unwrap();
+
+            current_cost * total_bag_count(dag, edge_costs, vertex.clone())
+        })
+        .sum::<u32>()
+        + 1
+}
+
+fn solve(lines: Vec<String>) -> (usize, u32) {
+    let (bag_dag, edge_costs) = build_dag(lines);
+
+    let part1 = bag_dag
         .iter()
         .filter(|(vertex, _)| {
             *vertex != "shiny gold"
                 && path_contains(&bag_dag, vertex.to_string(), &"shiny gold".to_string())
         })
-        .count()
+        .count();
+
+    let part2 = total_bag_count(&bag_dag, &edge_costs, "shiny gold".to_string()) - 1;
+
+    (part1, part2)
 }
 
 fn main() {
     let lines = utils::read_lines();
-    let part1 = solve(lines);
+    let (part1, part2) = solve(lines);
     println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
 }
 
 #[cfg(test)]
@@ -89,7 +116,7 @@ mod tests {
                 .map(|s| String::from(s))
                 .collect()
             ),
-            4
+            (4, 32)
         );
     }
 }
