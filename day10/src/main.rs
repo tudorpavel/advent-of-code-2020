@@ -1,37 +1,69 @@
-fn solve(lines: Vec<String>) -> u32 {
-    let mut nums: Vec<u32> = lines.iter().map(|l| l.parse().unwrap()).collect();
+fn part1(nums: &Vec<u64>) -> u64 {
+    let mut diff1_count = 0;
+    let mut diff3_count = 0;
 
-    nums.sort();
-
-    let (mut diff1_count, mut diff3_count) =
-        nums.windows(2)
-            .fold((0, 0), |(mut diff1_count, mut diff3_count), pair| {
-                match pair[1] - pair[0] {
-                    1 => diff1_count += 1,
-                    3 => diff3_count += 1,
-                    _ => (),
-                }
-
-                (diff1_count, diff3_count)
-            });
-
-    // from charging outlet to first adapter
-    match nums[0] {
-        1 => diff1_count += 1,
-        3 => diff3_count += 1,
-        _ => (),
+    for window in nums.windows(2) {
+        match window[1] - window[0] {
+            1 => diff1_count += 1,
+            3 => diff3_count += 1,
+            _ => (),
+        }
     }
-
-    // from last adapter to my device
-    diff3_count += 1;
 
     diff1_count * diff3_count
 }
 
+fn part2(nums: &Vec<u64>) -> u64 {
+    let mut slices = vec![];
+    let mut current_slice = vec![];
+
+    // generate slices of consecutive 1-diff elements, for example:
+    // input:  [0, 1, 4, 5, 6, 9]
+    // result: [[0, 1], [4, 5, 6], [9]]
+    for window in nums.windows(2) {
+        match window[1] - window[0] {
+            1 => current_slice.push(window[0]),
+            3 => {
+                current_slice.push(window[0]);
+                slices.push(current_slice);
+                current_slice = vec![];
+            }
+            _ => (),
+        }
+    }
+
+    slices
+        .iter()
+        .map(|slice| match slice.len() {
+            1 => 1,
+            2 => 1,
+            3 => 2,
+            4 => 4,
+            5 => 7,
+            _ => panic!("unexpected slice of size N > 5 consecutive 1-diff elements"),
+        })
+        .product()
+}
+
+fn solve(lines: Vec<String>) -> (u64, u64) {
+    let mut nums: Vec<u64> = lines.iter().map(|l| l.parse().unwrap()).collect();
+
+    nums.sort();
+
+    // add charging outlet before first adapter
+    nums.insert(0, 0);
+
+    // add my device after last adapter
+    nums.push(nums.last().unwrap() + 3);
+
+    (part1(&nums), part2(&nums))
+}
+
 fn main() {
     let lines = utils::read_lines();
-    let part1 = solve(lines);
+    let (part1, part2) = solve(lines);
     println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
 }
 
 #[cfg(test)]
@@ -47,7 +79,7 @@ mod tests {
                     .map(|n| n.to_string())
                     .collect()
             ),
-            35
+            (35, 8)
         );
     }
 
@@ -63,7 +95,7 @@ mod tests {
                 .map(|n| n.to_string())
                 .collect()
             ),
-            220
+            (220, 19208)
         );
     }
 }
