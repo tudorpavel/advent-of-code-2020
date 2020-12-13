@@ -8,9 +8,14 @@ struct Point {
 struct Ship {
     current_position: Point,
 
+    // Only for Part 1
     // N E S W
     // 0 1 2 3
     facing_direction: u8,
+
+    // Only for Part 2
+    // always relative to current_position
+    waypoint: Point,
 }
 
 impl Ship {
@@ -18,10 +23,11 @@ impl Ship {
         Ship {
             current_position: Point { x: 0, y: 0 },
             facing_direction: 1,
+            waypoint: Point { x: 10, y: 1 },
         }
     }
 
-    fn step(&mut self, instruction: &str) {
+    fn part1_step(&mut self, instruction: &str) {
         let (code, value) = instruction.split_at(1);
         let value: i32 = value.parse().unwrap();
 
@@ -37,18 +43,69 @@ impl Ship {
                 self.facing_direction = (self.facing_direction + (value / 90) as u8) % 4;
             }
             "F" => match self.facing_direction {
-                0 => self.step(&format!("N{}", value)),
-                1 => self.step(&format!("E{}", value)),
-                2 => self.step(&format!("S{}", value)),
-                3 => self.step(&format!("W{}", value)),
+                0 => self.part1_step(&format!("N{}", value)),
+                1 => self.part1_step(&format!("E{}", value)),
+                2 => self.part1_step(&format!("S{}", value)),
+                3 => self.part1_step(&format!("W{}", value)),
                 _ => (),
             },
             _ => (),
         }
     }
+
+    fn part2_step(&mut self, instruction: &str) {
+        let (code, value) = instruction.split_at(1);
+        let value: i32 = value.parse().unwrap();
+
+        match code {
+            "N" => self.waypoint.y += value,
+            "S" => self.waypoint.y -= value,
+            "E" => self.waypoint.x += value,
+            "W" => self.waypoint.x -= value,
+            "L" => match value {
+                90 => {
+                    let y = self.waypoint.y;
+                    self.waypoint.y = self.waypoint.x;
+                    self.waypoint.x = -y;
+                }
+                180 => {
+                    self.part2_step(&format!("L{}", 90));
+                    self.part2_step(&format!("L{}", 90));
+                }
+                270 => {
+                    self.part2_step(&format!("L{}", 90));
+                    self.part2_step(&format!("L{}", 90));
+                    self.part2_step(&format!("L{}", 90));
+                }
+                _ => panic!("expected rotation 90, 180 or 270, got {}", value),
+            },
+            "R" => match value {
+                90 => {
+                    let x = self.waypoint.x;
+                    self.waypoint.x = self.waypoint.y;
+                    self.waypoint.y = -x;
+                }
+                180 => {
+                    self.part2_step(&format!("R{}", 90));
+                    self.part2_step(&format!("R{}", 90));
+                }
+                270 => {
+                    self.part2_step(&format!("R{}", 90));
+                    self.part2_step(&format!("R{}", 90));
+                    self.part2_step(&format!("R{}", 90));
+                }
+                _ => panic!("expected rotation 90, 180 or 270, got {}", value),
+            },
+            "F" => {
+                self.current_position.x += value * self.waypoint.x;
+                self.current_position.y += value * self.waypoint.y;
+            }
+            _ => (),
+        }
+    }
 }
 
-fn solve(lines: Vec<String>) -> i32 {
+fn part1(lines: &[String]) -> i32 {
     let mut ship = Ship::new();
 
     for line in lines {
@@ -56,7 +113,7 @@ fn solve(lines: Vec<String>) -> i32 {
         // println!("instruction: {}", line);
         // println!("before: {:#?}", &ship);
 
-        ship.step(&line);
+        ship.part1_step(&line);
 
         // println!("after: {:#?}", &ship);
     }
@@ -64,10 +121,31 @@ fn solve(lines: Vec<String>) -> i32 {
     ship.current_position.x.abs() + ship.current_position.y.abs()
 }
 
+fn part2(lines: &[String]) -> i32 {
+    let mut ship = Ship::new();
+
+    for line in lines {
+        // println!("--------------------------------------");
+        // println!("instruction: {}", line);
+        // println!("before: {:#?}", &ship);
+
+        ship.part2_step(&line);
+
+        // println!("after: {:#?}", &ship);
+    }
+
+    ship.current_position.x.abs() + ship.current_position.y.abs()
+}
+
+fn solve(lines: Vec<String>) -> (i32, i32) {
+    (part1(&lines), part2(&lines))
+}
+
 fn main() {
     let lines = utils::read_lines();
-    let part1 = solve(lines);
+    let (part1, part2) = solve(lines);
     println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
 }
 
 #[cfg(test)]
@@ -83,7 +161,7 @@ mod tests {
                     .map(String::from)
                     .collect()
             ),
-            25
+            (25, 286)
         );
     }
 }
