@@ -31,3 +31,9 @@ or_mask  = 1000000
 
 # and finally 1001001 is the value we need to save in memory
 ```
+
+## Part 2
+
+So the bitmask can be considered an `or_mask` except for the floating bits. We can try to brute-force it and actually compute all 2^N floating addresses and update our HashMap with the values. It might run in reasonable time and with reasonable memory usage, but if not we'll find a better solution.
+
+Turns out my brute-force solution was fast enough, however the code is quite ugly because of all the duplication, bitwise operations and other binary numbers magic. Oh well...
