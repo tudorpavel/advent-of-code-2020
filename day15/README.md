@@ -15,3 +15,9 @@ Still, could we find a pattern that helps us figure out a much more efficient al
 For example, the input `3,2,1` is interesting:
   - the 2020th number spoken is 438
   - the 30000000th number spoken is 18
+
+Some time later... I gave up on trying to find a pattern, since each new number depends on the index there might not be a deterministic repeating pattern.
+
+Anyway, I managed to do a small optimization by changing my HashMap to a Vec after seeing this solution on Reddit. It is indeed faster: 600ms vs 2 seconds.
+
+When choosing HashMap I thought about being memory-efficient, but even for Part 2 storing 30 million u32 numbers should require only around 115 MB of memory which is unnoticeable on modern computers.

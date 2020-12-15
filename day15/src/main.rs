@@ -1,32 +1,31 @@
-use std::collections::HashMap;
+const PART1: usize = 2020;
+const PART2: usize = 30_000_000;
 
-const PART1: u32 = 2020;
-const PART2: u32 = 30000000;
+fn solve(lines: &[String], target_turn: usize) -> usize {
+    let starting_numbers: Vec<usize> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
 
-fn solve(lines: &[String], target_turn: u32) -> u32 {
-    let starting_numbers: Vec<u32> = lines[0].split(',').map(|s| s.parse().unwrap()).collect();
-
-    // HashMap<K, V>, where number K was last spoken at turn V
-    let mut history: HashMap<u32, u32> = HashMap::new();
+    // Vec where index is the spoken number and value is the turn when it was last spoken.
+    let mut history = vec![0; target_turn];
     let mut number_just_spoken = 0;
 
     if let Some((last, already_seen)) = starting_numbers.split_last() {
         number_just_spoken = *last;
 
         for (i, n) in already_seen.iter().enumerate() {
-            history.insert(*n, (i + 1) as u32);
+            history[*n] = i + 1;
         }
     }
 
-    let mut turn = starting_numbers.len() as u32;
+    let mut turn = starting_numbers.len();
 
     loop {
-        let next_number = match history.get(&number_just_spoken) {
-            Some(last_seen_at) => turn - last_seen_at,
-            None => 0,
+        let next_number = if history[number_just_spoken] != 0 {
+            turn - history[number_just_spoken]
+        } else {
+            0
         };
 
-        history.insert(number_just_spoken, turn);
+        history[number_just_spoken] = turn;
         number_just_spoken = next_number;
         turn += 1;
 
@@ -65,6 +64,6 @@ mod tests {
 
     #[test]
     fn part2_works_with_initial_example() {
-        assert_eq!(solve(&vec!["0,3,6".to_string()], PART2), 175594);
+        assert_eq!(solve(&vec!["0,3,6".to_string()], PART2), 175_594);
     }
 }
