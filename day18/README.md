@@ -133,3 +133,13 @@ we can reduce the entire stack and get the result:
 ---------
 
 ```
+
+## Part 2
+
+Nice twist, but we should be able to adapt the solution from Part 1 by having 2 reduce procedures:
+  - `reduce_addition` which begins when we encounter a `*` or `(` and adds everything until another `*` or `)`
+  - `reduce_parens` which is the same one we have at Part 1, but it should only encounter `*` operators
+
+So in our `evaluate` procedure we:
+  - call `reduce_addition` when we encounter a `*` and then push back `*` and continue
+  - call `reduce_addition` and then `reduce_parens` when we encounter a `(`
