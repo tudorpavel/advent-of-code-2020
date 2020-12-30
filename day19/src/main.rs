@@ -1,6 +1,9 @@
-#[derive(Clone)]
+use std::cell::RefCell;
+use std::rc::Rc;
+
+#[derive(Debug)]
 enum Tree {
-    Node(Box<Tree>, Box<Tree>),
+    Node(RefCell<Rc<Tree>>, RefCell<Rc<Tree>>),
     Solution,
     Nil,
 }
@@ -8,18 +11,39 @@ enum Tree {
 use Tree::{Nil, Node, Solution};
 
 impl Tree {
-    fn build(rules: &[&str], rule_id: usize) -> Tree {
+    fn build(rules: &[&str], rule_id: usize) -> Rc<Tree> {
         match rules[rule_id] {
-            "\"a\"" => Node(Box::new(Solution), Box::new(Nil)),
-            "\"b\"" => Node(Box::new(Nil), Box::new(Solution)),
-            composed_rule => composed_rule
-                .split(" | ")
-                .map(|append_rules| {
-                    append_rules.split(' ').fold(Solution, |acc, id| {
-                        acc.append_solution(&Tree::build(&rules, id.parse().unwrap()))
+            "\"a\"" => Rc::new(Node(
+                RefCell::new(Rc::new(Solution)),
+                RefCell::new(Rc::new(Nil)),
+            )),
+            "\"b\"" => Rc::new(Node(
+                RefCell::new(Rc::new(Nil)),
+                RefCell::new(Rc::new(Solution)),
+            )),
+            composed_rule => {
+                let trees: Vec<Rc<Tree>> = composed_rule
+                    .split(" | ")
+                    .map(|append_rules| {
+                        let ids: Vec<usize> = append_rules
+                            .split(' ')
+                            .map(|s| s.parse().unwrap())
+                            .collect();
+                        let tree = Tree::build(&rules, *ids.first().unwrap());
+                        for id in ids[1..].iter() {
+                            tree.append_solution(&Tree::build(&rules, *id));
+                        }
+
+                        tree
                     })
-                })
-                .fold(Nil, |acc, tree| acc.merge(&tree)),
+                    .collect();
+                let tree = trees.first().unwrap();
+                for other in trees[1..].iter() {
+                    tree.merge(&other);
+                }
+
+                Rc::clone(&tree)
+            }
         }
     }
 
@@ -29,32 +53,54 @@ impl Tree {
             (_, "") => false,
             (Node(left, right), _) => {
                 if &message[..1] == "a" {
-                    left.is_valid(&message[1..])
+                    left.borrow().is_valid(&message[1..])
                 } else {
-                    right.is_valid(&message[1..])
+                    right.borrow().is_valid(&message[1..])
                 }
             }
             _ => false,
         }
     }
 
-    fn append_solution(&self, other: &Tree) -> Tree {
-        match self {
-            Solution => other.clone(),
-            Node(left, right) => Node(
-                Box::new(left.append_solution(&other)),
-                Box::new(right.append_solution(&other)),
-            ),
-            Nil => Nil,
+    fn append_solution(&self, other: &Rc<Tree>) {
+        if let Node(left, right) = self {
+            {
+                let mut left = left.borrow_mut();
+                if let Solution = **left {
+                    *left = Rc::clone(&other);
+                    return;
+                };
+
+                let mut right = right.borrow_mut();
+                if let Solution = **right {
+                    *right = Rc::clone(&other);
+                    return;
+                };
+            }
+
+            left.borrow().append_solution(&other);
+            right.borrow().append_solution(&other);
         }
     }
 
-    fn merge(&self, other: &Tree) -> Tree {
-        match (self, other) {
-            (Nil, _) => other.clone(),
-            (_, Nil) => self.clone(),
-            (Node(l1, r1), Node(l2, r2)) => Node(Box::new(l1.merge(l2)), Box::new(r1.merge(r2))),
-            _ => Nil,
+    fn merge(&self, other: &Tree) {
+        if let (Node(l1, r1), Node(l2, r2)) = (self, other) {
+            {
+                let mut l1 = l1.borrow_mut();
+                if let Nil = **l1 {
+                    *l1 = Rc::clone(&l2.borrow());
+                    return;
+                };
+
+                let mut r1 = r1.borrow_mut();
+                if let Nil = **r1 {
+                    *r1 = Rc::clone(&r2.borrow());
+                    return;
+                };
+            }
+
+            l1.borrow().merge(&l2.borrow());
+            r1.borrow().merge(&r2.borrow());
         }
     }
 }
@@ -71,6 +117,10 @@ fn solve(lines: &[String]) -> usize {
         acc
     });
 
+    // let bla = Tree::build(&rules, 42);
+    // println!("{:#?}", bla);
+
+    // return 0;
     let rule_tree = Tree::build(&rules, 0);
 
     groups[1]
@@ -114,8 +164,14 @@ mod tests {
     #[test]
     fn is_valid_works() {
         let rule2 = Node(
-            Box::new(Node(Box::new(Solution), Box::new(Nil))),
-            Box::new(Node(Box::new(Nil), Box::new(Solution))),
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Solution)),
+                RefCell::new(Rc::new(Nil)),
+            ))),
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Nil)),
+                RefCell::new(Rc::new(Solution)),
+            ))),
         );
 
         assert!(rule2.is_valid("aa"));
@@ -123,27 +179,46 @@ mod tests {
 
     #[test]
     fn append_solution_works() {
-        let rule2 = Node(
-            Box::new(Node(Box::new(Solution), Box::new(Nil))),
-            Box::new(Node(Box::new(Nil), Box::new(Solution))),
-        );
-        let rule3 = Node(
-            Box::new(Node(Box::new(Nil), Box::new(Solution))),
-            Box::new(Node(Box::new(Solution), Box::new(Nil))),
-        );
-        let append_2_3 = rule2.append_solution(&rule3);
+        let rule2 = Rc::new(Node(
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Solution)),
+                RefCell::new(Rc::new(Nil)),
+            ))),
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Nil)),
+                RefCell::new(Rc::new(Solution)),
+            ))),
+        ));
+        let rule3 = Rc::new(Node(
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Nil)),
+                RefCell::new(Rc::new(Solution)),
+            ))),
+            RefCell::new(Rc::new(Node(
+                RefCell::new(Rc::new(Solution)),
+                RefCell::new(Rc::new(Nil)),
+            ))),
+        ));
 
-        assert!(append_2_3.is_valid("aaab"));
+        rule2.append_solution(&rule3);
+
+        assert!(rule2.is_valid("aaab"));
     }
 
     #[test]
     fn merge_works() {
-        let rule4 = Node(Box::new(Solution), Box::new(Nil));
-        let rule5 = Node(Box::new(Nil), Box::new(Solution));
-        let append_4_5 = rule4.append_solution(&rule5);
-        let append_5_4 = rule5.append_solution(&rule4);
-        let merge_4_5_with_5_4 = append_4_5.merge(&append_5_4);
+        let rule4 = Rc::new(Node(
+            RefCell::new(Rc::new(Solution)),
+            RefCell::new(Rc::new(Nil)),
+        ));
+        let rule5 = Rc::new(Node(
+            RefCell::new(Rc::new(Nil)),
+            RefCell::new(Rc::new(Solution)),
+        ));
+        rule4.append_solution(&rule5);
+        rule5.append_solution(&rule4);
+        rule4.merge(&rule5);
 
-        assert!(merge_4_5_with_5_4.is_valid("ba"));
+        assert!(rule4.is_valid("ba"));
     }
 }
